@@ -1,10 +1,102 @@
+-- [[ SPLASH / LOADING SCREEN INITIALIZATION ]] --
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
 local localPlayer = Players.LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+--- [[ Assets Setup ]] ---
+local IMAGE_ASSET_ID = "rbxassetid://74201360336613"
+local EXPLOSION_SOUND_ID = "rbxassetid://12221984"
+
+--- [[ Create Loading Screen UI ]] ---
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Name = "CustomLoadingScreen"
+loadingGui.IgnoreGuiInset = true
+loadingGui.ResetOnSpawn = false
+loadingGui.Parent = playerGui
+
+local mainLoadingFrame = Instance.new("Frame")
+mainLoadingFrame.Size = UDim2.new(1, 0, 1, 0)
+mainLoadingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainLoadingFrame.BorderSizePixel = 0
+mainLoadingFrame.Parent = loadingGui
+
+local splashImage = Instance.new("ImageLabel")
+splashImage.Size = UDim2.new(0, 250, 0, 250)
+splashImage.Position = UDim2.new(0.5, -125, 0.4, -125)
+splashImage.BackgroundTransparency = 1
+splashImage.Image = IMAGE_ASSET_ID
+splashImage.ScaleType = Enum.ScaleType.Fit
+splashImage.Parent = mainLoadingFrame
+
+local loadingContainer = Instance.new("Frame")
+loadingContainer.Size = UDim2.new(0, 200, 0, 100)
+loadingContainer.Position = UDim2.new(0.5, -100, 0.7, 0)
+loadingContainer.BackgroundTransparency = 1
+loadingContainer.Parent = mainLoadingFrame
+
+local spinner = Instance.new("ImageLabel")
+spinner.Size = UDim2.new(0, 50, 0, 50)
+spinner.Position = UDim2.new(0.5, -25, 0, 0)
+spinner.BackgroundTransparency = 1
+spinner.Image = "rbxassetid://6071579801"
+spinner.ImageColor3 = Color3.fromRGB(0, 230, 255)
+spinner.Parent = loadingContainer
+
+local percentLabel = Instance.new("TextLabel")
+percentLabel.Size = UDim2.new(1, 0, 0, 30)
+percentLabel.Position = UDim2.new(0, 0, 0, 60)
+percentLabel.BackgroundTransparency = 1
+percentLabel.Text = "0%"
+percentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+percentLabel.Font = Enum.Font.SourceSansBold
+percentLabel.TextSize = 22
+percentLabel.Parent = loadingContainer
+
+--- [[ Audio Execution ]] ---
+local sound = Instance.new("Sound")
+sound.SoundId = EXPLOSION_SOUND_ID
+sound.Volume = 0.8
+sound.Parent = SoundService
+sound:Play()
+
+--- [[ Spinner Animation ]] ---
+local spinTweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
+local spinTween = TweenService:Create(spinner, spinTweenInfo, { Rotation = 360 })
+spinTween:Play()
+
+--- [[ Progress Timer (1% to 100% over 2 Seconds) ]] ---
+local TOTAL_DURATION = 2.0
+local STEPS = 100
+local STEP_DELAY = TOTAL_DURATION / STEPS
+
+for i = 1, 100 do
+	percentLabel.Text = "Loading... " .. tostring(i) .. "%"
+	task.wait(STEP_DELAY)
+end
+
+spinTween:Cancel()
+
+-- Fade out splash screen
+local fadeInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local fadeTween = TweenService:Create(mainLoadingFrame, fadeInfo, { BackgroundTransparency = 1 })
+
+TweenService:Create(splashImage, fadeInfo, { ImageTransparency = 1 }):Play()
+TweenService:Create(spinner, fadeInfo, { ImageTransparency = 1 }):Play()
+TweenService:Create(percentLabel, fadeInfo, { TextTransparency = 1 }):Play()
+
+fadeTween:Play()
+fadeTween.Completed:Wait()
+
+loadingGui:Destroy()
+sound:Destroy()
+
+-- [[ ORIGINAL UNCHANGED SCRIPT BELOW ]] --
 
 -- Double-Run Protection
 if CoreGui:FindFirstChild("VCK") then
