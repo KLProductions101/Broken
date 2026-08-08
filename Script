@@ -1,0 +1,209 @@
+-- IObot Executor - Challenge 8: Final R6 Fixed Morpher
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local localPlayer = Players.LocalPlayer
+
+-- Double-Run Protection
+if CoreGui:FindFirstChild("VCK") then
+	CoreGui.VCK:Destroy()
+end
+
+-- 1. Create CoreGui Screen Layout
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VCK"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = CoreGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 250, 0, 150)
+mainFrame.Position = UDim2.new(0.5, -125, 0.4, -75)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "VCK"
+title.TextColor3 = Color3.fromRGB(200, 200, 200)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 13
+title.Parent = mainFrame
+
+local inputField = Instance.new("TextBox")
+inputField.Size = UDim2.new(0, 210, 0, 35)
+inputField.Position = UDim2.new(0, 20, 0, 40)
+inputField.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+inputField.TextColor3 = Color3.fromRGB(255, 255, 255)
+inputField.PlaceholderText = "Username or User ID..."
+inputField.Text = ""
+inputField.Font = Enum.Font.SourceSans
+inputField.TextSize = 16
+inputField.Parent = mainFrame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 5)
+inputCorner.Parent = inputField
+
+local morphButton = Instance.new("TextButton")
+morphButton.Size = UDim2.new(0, 210, 0, 35)
+morphButton.Position = UDim2.new(0, 20, 0, 90)
+morphButton.Text = "MORPH"
+morphButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+morphButton.Font = Enum.Font.SourceSansBold
+morphButton.TextSize = 16
+morphButton.Parent = mainFrame
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 5)
+buttonCorner.Parent = morphButton
+
+local successLabel = Instance.new("TextLabel")
+successLabel.Size = UDim2.new(0, 200, 0, 50)
+successLabel.Position = UDim2.new(0.5, -100, 0.2, 0)
+successLabel.BackgroundTransparency = 1
+successLabel.Text = ""
+successLabel.Font = Enum.Font.SourceSansBold
+successLabel.TextSize = 28
+successLabel.TextTransparency = 1
+successLabel.Parent = screenGui
+
+-- 2. RGB Effect
+local hue = 0
+local rgbConnection
+rgbConnection = RunService.RenderStepped:Connect(function(dt)
+	if not mainFrame or not mainFrame.Parent then
+		rgbConnection:Disconnect()
+		return
+	end
+	hue = (hue + (dt * 0.15)) % 1
+	morphButton.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 0.8)
+end)
+
+local function showNotice(text, isSuccess)
+	successLabel.Text = text
+	successLabel.TextColor3 = isSuccess and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(255, 75, 75)
+	successLabel.TextTransparency = 0
+	task.wait(0.5)
+	TweenService:Create(successLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+end
+
+-- 3. Fixed Morph Functionality
+morphButton.MouseButton1Click:Connect(function()
+	local targetInput = inputField.Text
+	local character = localPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	
+	if not character or not humanoid or targetInput == "" then 
+		showNotice("Error", false)
+		return 
+	end
+	
+	local targetUserId = tonumber(targetInput)
+	
+	if not targetUserId then
+		local idSuccess, idResult = pcall(function()
+			return Players:GetUserIdFromNameAsync(targetInput)
+		end)
+		if idSuccess then
+			targetUserId = idResult
+		else
+			showNotice("Error", false)
+			return
+		end
+	end
+	
+	local modelSuccess, generatedModel = pcall(function()
+		local desc = Players:GetHumanoidDescriptionFromUserId(targetUserId)
+		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R6)
+	end)
+	
+	if modelSuccess and generatedModel then
+		-- Clear old clothes, colors, and accessories
+		for _, item in ipairs(character:GetChildren()) do
+			if item:IsA("Accessory") or item:IsA("Clothing") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
+				item:Destroy()
+			end
+		end
+		
+		-- Match limb colors
+		for _, targetItem in ipairs(generatedModel:GetChildren()) do
+			local existingPart = character:FindFirstChild(targetItem.Name)
+			if existingPart and existingPart:IsA("BasePart") and existingPart.Name ~= "HumanoidRootPart" then
+				existingPart.Color = targetItem.Color
+			end
+		end
+
+		-- FIX: Specific Head, Mesh, and Face Extraction
+		local targetHead = generatedModel:FindFirstChild("Head")
+		local currentHead = character:FindFirstChild("Head")
+		if targetHead and currentHead then
+			-- Reset Face Decal
+			local oldFace = currentHead:FindFirstChildOfClass("Decal")
+			if oldFace then oldFace:Destroy() end
+			
+			local newFace = targetHead:FindFirstChildOfClass("Decal")
+			if newFace then 
+				newFace:Clone().Parent = currentHead 
+			else
+				-- If they have no face, make sure a default face asset isn't lingering
+				local defaultFace = Instance.new("Decal")
+				defaultFace.Name = "face"
+				defaultFace.Texture = "rbxasset://textures/face.png"
+				defaultFace.Parent = currentHead
+			end
+
+			-- Reset SpecialMesh inside Head (Handles head shapes)
+			local oldMesh = currentHead:FindFirstChildOfClass("SpecialMesh")
+			if oldMesh then oldMesh:Destroy() end
+			
+			local newMesh = targetHead:FindFirstChildOfClass("SpecialMesh")
+			if newMesh then 
+				newMesh:Clone().Parent = currentHead 
+			end
+		end
+		
+		-- Apply classic clothing objects
+		for _, item in ipairs(generatedModel:GetChildren()) do
+			if item:IsA("Clothing") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
+				item:Clone().Parent = character
+			elseif item:IsA("Accessory") then
+				-- FIX: Rebuild manual client-side weld attachment fallback
+				local clonedAccessory = item:Clone()
+				local handle = clonedAccessory:FindFirstChild("Handle")
+				if handle then
+					local attachment = handle:FindFirstChildOfClass("Attachment")
+					if attachment then
+						-- Find matching attachment inside player's character structure
+						local targetAttachment = character:FindFirstChild(attachment.Name, true)
+						if targetAttachment then
+							handle.CFrame = targetAttachment.WorldCFrame
+							local weld = Instance.new("Weld")
+							weld.Name = "AccessoryWeld"
+							weld.Part0 = handle
+							weld.Part1 = targetAttachment.Parent
+							weld.C0 = attachment.CFrame
+							weld.C1 = targetAttachment.CFrame
+							weld.Parent = handle
+						end
+					end
+				end
+				clonedAccessory.Parent = character
+			end
+		end
+		
+		generatedModel:Destroy()
+		showNotice("Success", true)
+	else
+		showNotice("Error", false)
+	end
+end)
