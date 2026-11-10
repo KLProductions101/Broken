@@ -5,9 +5,11 @@ local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 --- [[ Assets Setup ]] ---
 local IMAGE_ASSET_ID = "rbxassetid://74201360336613"
@@ -22,7 +24,7 @@ loadingGui.Parent = playerGui
 
 local mainLoadingFrame = Instance.new("Frame")
 mainLoadingFrame.Size = UDim2.new(1, 0, 1, 0)
-mainLoadingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainLoadingFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 mainLoadingFrame.BorderSizePixel = 0
 mainLoadingFrame.Parent = loadingGui
 
@@ -53,9 +55,9 @@ percentLabel.Size = UDim2.new(1, 0, 0, 30)
 percentLabel.Position = UDim2.new(0, 0, 0, 60)
 percentLabel.BackgroundTransparency = 1
 percentLabel.Text = "0%"
-percentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-percentLabel.Font = Enum.Font.SourceSansBold
-percentLabel.TextSize = 22
+percentLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+percentLabel.Font = Enum.Font.GothamBold
+percentLabel.TextSize = 20
 percentLabel.Parent = loadingContainer
 
 --- [[ Audio Execution ]] ---
@@ -70,7 +72,7 @@ local spinTweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirec
 local spinTween = TweenService:Create(spinner, spinTweenInfo, { Rotation = 360 })
 spinTween:Play()
 
---- [[ Progress Timer (1% to 100% over 2 Seconds) ]] ---
+--- [[ Progress Timer ]] ---
 local TOTAL_DURATION = 2.0
 local STEPS = 100
 local STEP_DELAY = TOTAL_DURATION / STEPS
@@ -80,7 +82,7 @@ for i = 1, 100 do
 	task.wait(STEP_DELAY)
 end
 
-spinTween:Cancel()
+spinTween::Cancel()
 
 -- Fade out splash screen
 local fadeInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -96,80 +98,111 @@ fadeTween.Completed:Wait()
 loadingGui:Destroy()
 sound:Destroy()
 
--- [[ ORIGINAL UNCHANGED SCRIPT BELOW ]] --
+-- [[ VCK UI SETUP (Optimized for PC & Mobile) ]] --
 
 -- Double-Run Protection
 if CoreGui:FindFirstChild("VCK") then
 	CoreGui.VCK:Destroy()
 end
 
--- 1. Create CoreGui Screen Layout
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "VCK"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = CoreGui
 
+-- Adaptive sizing based on device type
+local frameWidth = isMobile and 280 or 260
+local frameHeight = isMobile and 180 | 165 or 160
+local elementHeight = isMobile and 44 or 36
+
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 150)
-mainFrame.Position = UDim2.new(0.5, -125, 0.4, -75)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
+mainFrame.Position = UDim2.new(0.5, -frameWidth/2, 0.4, -frameHeight/2)
+mainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(45, 45, 55)
+uiStroke.Thickness = 1.5
+uiStroke.Parent = mainFrame
+
 local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.CornerRadius = UDim.new(0, 10)
 uiCorner.Parent = mainFrame
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "VCK"
-title.TextColor3 = Color3.fromRGB(200, 200, 200)
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Text = "VCK MORPH SYSTEM"
+title.TextColor3 = Color3.fromRGB(220, 220, 230)
 title.BackgroundTransparency = 1
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 13
+title.Font = Enum.Font.GothamBold
+title.TextSize = isMobile and 14 or 12
 title.Parent = mainFrame
 
-local inputField = Instance.new("TextBox")
-inputField.Size = UDim2.new(0, 210, 0, 35)
-inputField.Position = UDim2.new(0, 20, 0, 40)
-inputField.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-inputField.TextColor3 = Color3.fromRGB(255, 255, 255)
-inputField.PlaceholderText = "Username or User ID..."
-inputField.Text = ""
-inputField.Font = Enum.Font.SourceSans
-inputField.TextSize = 16
-inputField.Parent = mainFrame
+-- Target Player Input (Who to morph)
+local targetInput = Instance.new("TextBox")
+targetInput.Size = UDim2.new(0, frameWidth - 30, 0, elementHeight)
+targetInput.Position = UDim2.new(0, 15, 0, 42)
+targetInput.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+targetInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
+targetInput.PlaceholderText = "Target Player (Name/ID)"
+targetInput.Text = ""
+targetInput.Font = Enum.Font.Gotham
+targetInput.TextSize = isMobile and 15 or 14
+targetInput.Parent = mainFrame
 
 local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 5)
-inputCorner.Parent = inputField
+inputCorner.CornerRadius = UDim.new(0, 6)
+inputCorner.Parent = targetInput
+
+-- Avatar ID Input (What avatar to apply)
+local avatarInput = Instance.new("TextBox")
+avatarInput.Size = UDim2.new(0, frameWidth - 30, 0, elementHeight)
+avatarInput.Position = UDim2.new(0, 15, 0, 48 + elementHeight)
+avatarInput.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+avatarInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+avatarInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
+avatarInput.PlaceholderText = "Avatar Username or ID..."
+avatarInput.Text = ""
+avatarInput.Font = Enum.Font.Gotham
+avatarInput.TextSize = isMobile and 15 or 14
+avatarInput.Parent = mainFrame
+
+local avatarCorner = Instance.new("UICorner")
+avatarCorner.CornerRadius = UDim.new(0, 6)
+avatarCorner.Parent = avatarInput
 
 local morphButton = Instance.new("TextButton")
-morphButton.Size = UDim2.new(0, 210, 0, 35)
-morphButton.Position = UDim2.new(0, 20, 0, 90)
-morphButton.Text = "MORPH"
+morphButton.Size = UDim2.new(0, frameWidth - 30, 0, elementHeight)
+morphButton.Position = UDim2.new(0, 15, 0, 54 + (elementHeight * 2))
+morphButton.Text = "APPLY MORPH"
 morphButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-morphButton.Font = Enum.Font.SourceSansBold
-morphButton.TextSize = 16
+morphButton.Font = Enum.Font.GothamBold
+morphButton.TextSize = isMobile and 15 or 14
 morphButton.Parent = mainFrame
 
 local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 5)
+buttonCorner.CornerRadius = UDim.new(0, 6)
 buttonCorner.Parent = morphButton
 
 local successLabel = Instance.new("TextLabel")
-successLabel.Size = UDim2.new(0, 200, 0, 50)
-successLabel.Position = UDim2.new(0.5, -100, 0.2, 0)
+successLabel.Size = UDim2.new(0, 200, 0, 40)
+successLabel.Position = UDim2.new(0.5, -100, 0.15, 0)
 successLabel.BackgroundTransparency = 1
 successLabel.Text = ""
-successLabel.Font = Enum.Font.SourceSansBold
-successLabel.TextSize = 28
+successLabel.Font = Enum.Font.GothamBold
+successLabel.TextSize = 22
 successLabel.TextTransparency = 1
 successLabel.Parent = screenGui
 
--- 2. RGB Effect
+-- Dynamically resize main frame based on inputs layout
+mainFrame.Size = UDim2.new(0, frameWidth, 0, 68 + (elementHeight * 3))
+
+-- RGB Accent Effect for Button
 local hue = 0
 local rgbConnection
 rgbConnection = RunService.RenderStepped:Connect(function(dt)
@@ -183,63 +216,101 @@ end)
 
 local function showNotice(text, isSuccess)
 	successLabel.Text = text
-	successLabel.TextColor3 = isSuccess and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(255, 75, 75)
+	successLabel.TextColor3 = isSuccess and Color3.fromRGB(100, 255, 150) or Color3.fromRGB(255, 80, 80)
 	successLabel.TextTransparency = 0
-	task.wait(0.5)
+	task.wait(0.6)
 	TweenService:Create(successLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
 end
 
--- 3. Fixed Morph Functionality
-morphButton.MouseButton1Click:Connect(function()
-	local targetInput = inputField.Text
-	local character = localPlayer.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+-- Helper to fetch UserId safely from username or ID string
+local function getUserId(inputStr)
+	local num = tonumber(inputStr)
+	if num then return num end
 	
-	if not character or not humanoid or targetInput == "" then 
-		showNotice("Error", false)
-		return 
+	local success, result = pcall(function()
+		return Players:GetUserIdFromNameAsync(inputStr)
+	end)
+	if success then
+		return result
+	end
+	return nil
+end
+
+-- Client-Side Morph Functionality (Supports Target Player + Target Avatar)
+morphButton.MouseButton1Click:Connect(function()
+	local targetStr = targetInput.Text
+	local avatarStr = avatarInput.Text
+	
+	if avatarStr == "" then
+		showNotice("Missing Avatar", false)
+		return
 	end
 	
-	local targetUserId = tonumber(targetInput)
-	
-	if not targetUserId then
-		local idSuccess, idResult = pcall(function()
-			return Players:GetUserIdFromNameAsync(targetInput)
-		end)
-		if idSuccess then
-			targetUserId = idResult
+	-- Determine target character
+	local targetChar = nil
+	if targetStr == "" then
+		targetChar = localPlayer.Character
+	else
+		-- Check if target is a player name or UserId
+		local foundPlayer = Players:FindFirstChild(targetStr)
+		if not foundPlayer then
+			local targetIdNum = tonumber(targetStr)
+			if targetIdNum then
+				for _, p in ipairs(Players:GetPlayers()) do
+					if p.UserId == targetIdNum then
+						foundPlayer = p
+						break
+					end
+				end
+			end
+		end
+		
+		if foundPlayer then
+			targetChar = foundPlayer.Character
 		else
-			showNotice("Error", false)
-			return
+			-- Try workspace model fallback
+			targetChar = workspace:FindFirstChild(targetStr)
 		end
 	end
 	
+	local humanoid = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
+	if not targetChar or not humanoid then
+		showNotice("Invalid Target", false)
+		return
+	end
+	
+	-- Get Avatar User ID to morph into
+	local avatarUserId = getUserId(avatarStr)
+	if not avatarUserId then
+		showNotice("Invalid Avatar", false)
+		return
+	end
+	
 	local modelSuccess, generatedModel = pcall(function()
-		local desc = Players:GetHumanoidDescriptionFromUserId(targetUserId)
+		local desc = Players:GetHumanoidDescriptionFromUserId(avatarUserId)
 		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R6)
 	end)
 	
 	if modelSuccess and generatedModel then
-		-- Clear old clothes, colors, and accessories
-		for _, item in ipairs(character:GetChildren()) do
-			if item:IsA("Accessory") or item:IsA("Clothing") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
+		-- Clear old clothes, colors, and accessories on target character locally
+		for _, item in ipairs(targetChar:GetChildren()) do
+			if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
 				item:Destroy()
 			end
 		end
 		
 		-- Match limb colors
 		for _, targetItem in ipairs(generatedModel:GetChildren()) do
-			local existingPart = character:FindFirstChild(targetItem.Name)
+			local existingPart = targetChar:FindFirstChild(targetItem.Name)
 			if existingPart and existingPart:IsA("BasePart") and existingPart.Name ~= "HumanoidRootPart" then
 				existingPart.Color = targetItem.Color
 			end
 		end
 
-		-- FIX: Specific Head, Mesh, and Face Extraction
+		-- Head, Mesh, and Face Extraction
 		local targetHead = generatedModel:FindFirstChild("Head")
-		local currentHead = character:FindFirstChild("Head")
+		local currentHead = targetChar:FindFirstChild("Head")
 		if targetHead and currentHead then
-			-- Reset Face Decal
 			local oldFace = currentHead:FindFirstChildOfClass("Decal")
 			if oldFace then oldFace:Destroy() end
 			
@@ -247,14 +318,12 @@ morphButton.MouseButton1Click:Connect(function()
 			if newFace then 
 				newFace:Clone().Parent = currentHead 
 			else
-				-- If they have no face, make sure a default face asset isn't lingering
 				local defaultFace = Instance.new("Decal")
 				defaultFace.Name = "face"
 				defaultFace.Texture = "rbxasset://textures/face.png"
 				defaultFace.Parent = currentHead
 			end
 
-			-- Reset SpecialMesh inside Head (Handles head shapes)
 			local oldMesh = currentHead:FindFirstChildOfClass("SpecialMesh")
 			if oldMesh then oldMesh:Destroy() end
 			
@@ -264,19 +333,17 @@ morphButton.MouseButton1Click:Connect(function()
 			end
 		end
 		
-		-- Apply classic clothing objects
+		-- Apply classic clothing and accessories
 		for _, item in ipairs(generatedModel:GetChildren()) do
-			if item:IsA("Clothing") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
-				item:Clone().Parent = character
+			if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
+				item:Clone().Parent = targetChar
 			elseif item:IsA("Accessory") then
-				-- FIX: Rebuild manual client-side weld attachment fallback
 				local clonedAccessory = item:Clone()
 				local handle = clonedAccessory:FindFirstChild("Handle")
 				if handle then
 					local attachment = handle:FindFirstChildOfClass("Attachment")
 					if attachment then
-						-- Find matching attachment inside player's character structure
-						local targetAttachment = character:FindFirstChild(attachment.Name, true)
+						local targetAttachment = targetChar:FindFirstChild(attachment.Name, true)
 						if targetAttachment then
 							handle.CFrame = targetAttachment.WorldCFrame
 							local weld = Instance.new("Weld")
@@ -289,12 +356,12 @@ morphButton.MouseButton1Click:Connect(function()
 						end
 					end
 				end
-				clonedAccessory.Parent = character
+				clonedAccessory.Parent = targetChar
 			end
 		end
 		
 		generatedModel:Destroy()
-		showNotice("Success", true)
+		showNotice("Success!", true)
 	else
 		showNotice("Error", false)
 	end
