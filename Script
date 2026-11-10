@@ -1,133 +1,34 @@
--- [[ SPLASH / LOADING SCREEN INITIALIZATION ]] --
+-- [[ VCK EXECUTOR COMPATIBLE MORPH SCRIPT ]] --
 
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
---- [[ Assets Setup ]] ---
-local IMAGE_ASSET_ID = "rbxassetid://74201360336613"
-local EXPLOSION_SOUND_ID = "rbxassetid://12221984"
-
---- [[ Create Loading Screen UI ]] ---
-local loadingGui = Instance.new("ScreenGui")
-loadingGui.Name = "CustomLoadingScreen"
-loadingGui.IgnoreGuiInset = true
-loadingGui.ResetOnSpawn = false
-loadingGui.Parent = playerGui
-
-local mainLoadingFrame = Instance.new("Frame")
-mainLoadingFrame.Size = UDim2.new(1, 0, 1, 0)
-mainLoadingFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-mainLoadingFrame.BorderSizePixel = 0
-mainLoadingFrame.Parent = loadingGui
-
-local splashImage = Instance.new("ImageLabel")
-splashImage.Size = UDim2.new(0, 250, 0, 250)
-splashImage.Position = UDim2.new(0.5, -125, 0.4, -125)
-splashImage.BackgroundTransparency = 1
-splashImage.Image = IMAGE_ASSET_ID
-splashImage.ScaleType = Enum.ScaleType.Fit
-splashImage.Parent = mainLoadingFrame
-
-local loadingContainer = Instance.new("Frame")
-loadingContainer.Size = UDim2.new(0, 200, 0, 100)
-loadingContainer.Position = UDim2.new(0.5, -100, 0.7, 0)
-loadingContainer.BackgroundTransparency = 1
-loadingContainer.Parent = mainLoadingFrame
-
-local spinner = Instance.new("ImageLabel")
-spinner.Size = UDim2.new(0, 50, 0, 50)
-spinner.Position = UDim2.new(0.5, -25, 0, 0)
-spinner.BackgroundTransparency = 1
-spinner.Image = "rbxassetid://6071579801"
-spinner.ImageColor3 = Color3.fromRGB(0, 230, 255)
-spinner.Parent = loadingContainer
-
-local percentLabel = Instance.new("TextLabel")
-percentLabel.Size = UDim2.new(1, 0, 0, 30)
-percentLabel.Position = UDim2.new(0, 0, 0, 60)
-percentLabel.BackgroundTransparency = 1
-percentLabel.Text = "0%"
-percentLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
-percentLabel.Font = Enum.Font.GothamBold
-percentLabel.TextSize = 20
-percentLabel.Parent = loadingContainer
-
---- [[ Audio Execution ]] ---
-local sound = Instance.new("Sound")
-sound.SoundId = EXPLOSION_SOUND_ID
-sound.Volume = 0.8
-sound.Parent = SoundService
-sound:Play()
-
---- [[ Spinner Animation ]] ---
-local spinTweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
-local spinTween = TweenService:Create(spinner, spinTweenInfo, { Rotation = 360 })
-spinTween:Play()
-
---- [[ Progress Timer ]] ---
-local TOTAL_DURATION = 2.0
-local STEPS = 100
-local STEP_DELAY = TOTAL_DURATION / STEPS
-
-for i = 1, 100 do
-	percentLabel.Text = "Loading... " .. tostring(i) .. "%"
-	task.wait(STEP_DELAY)
-end
-
-spinTween::Cancel()
-
--- Fade out splash screen
-local fadeInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local fadeTween = TweenService:Create(mainLoadingFrame, fadeInfo, { BackgroundTransparency = 1 })
-
-TweenService:Create(splashImage, fadeInfo, { ImageTransparency = 1 }):Play()
-TweenService:Create(spinner, fadeInfo, { ImageTransparency = 1 }):Play()
-TweenService:Create(percentLabel, fadeInfo, { TextTransparency = 1 }):Play()
-
-fadeTween:Play()
-fadeTween.Completed:Wait()
-
-loadingGui:Destroy()
-sound:Destroy()
-
--- [[ VCK UI SETUP (Optimized for PC & Mobile) ]] --
+-- Safe GUI container parent (tries CoreGui first, falls back to PlayerGui)
+local guiParent = pcall(function() return gethui() end) and gethui() or (CoreGui:FindFirstChild("RobloxGui") or playerGui)
 
 -- Double-Run Protection
-if CoreGui:FindFirstChild("VCK") then
-	CoreGui.VCK:Destroy()
+if guiParent:FindFirstChild("VCK") then
+	guiParent.VCK:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "VCK"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = CoreGui
-
--- Adaptive sizing based on device type
-local frameWidth = isMobile and 280 or 260
-local frameHeight = isMobile and 180 | 165 or 160
-local elementHeight = isMobile and 44 or 36
+screenGui.Parent = guiParent
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
-mainFrame.Position = UDim2.new(0.5, -frameWidth/2, 0.4, -frameHeight/2)
+mainFrame.Size = UDim2.new(0, 260, 0, 160)
+mainFrame.Position = UDim2.new(0.5, -130, 0.4, -80)
 mainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
-
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Color = Color3.fromRGB(45, 45, 55)
-uiStroke.Thickness = 1.5
-uiStroke.Parent = mainFrame
 
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0, 10)
@@ -139,230 +40,123 @@ title.Text = "VCK MORPH SYSTEM"
 title.TextColor3 = Color3.fromRGB(220, 220, 230)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
-title.TextSize = isMobile and 14 or 12
+title.TextSize = 12
 title.Parent = mainFrame
 
--- Target Player Input (Who to morph)
 local targetInput = Instance.new("TextBox")
-targetInput.Size = UDim2.new(0, frameWidth - 30, 0, elementHeight)
-targetInput.Position = UDim2.new(0, 15, 0, 42)
+targetInput.Size = UDim2.new(0, 230, 0, 35)
+targetInput.Position = UDim2.new(0, 15, 0, 40)
 targetInput.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 targetInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-targetInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
 targetInput.PlaceholderText = "Target Player (Name/ID)"
 targetInput.Text = ""
 targetInput.Font = Enum.Font.Gotham
-targetInput.TextSize = isMobile and 15 or 14
+targetInput.TextSize = 14
 targetInput.Parent = mainFrame
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 6)
-inputCorner.Parent = targetInput
-
--- Avatar ID Input (What avatar to apply)
 local avatarInput = Instance.new("TextBox")
-avatarInput.Size = UDim2.new(0, frameWidth - 30, 0, elementHeight)
-avatarInput.Position = UDim2.new(0, 15, 0, 48 + elementHeight)
+avatarInput.Size = UDim2.new(0, 230, 0, 35)
+avatarInput.Position = UDim2.new(0, 15, 0, 80)
 avatarInput.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 avatarInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-avatarInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
 avatarInput.PlaceholderText = "Avatar Username or ID..."
 avatarInput.Text = ""
 avatarInput.Font = Enum.Font.Gotham
-avatarInput.TextSize = isMobile and 15 or 14
+avatarInput.TextSize = 14
 avatarInput.Parent = mainFrame
 
-local avatarCorner = Instance.new("UICorner")
-avatarCorner.CornerRadius = UDim.new(0, 6)
-avatarCorner.Parent = avatarInput
-
 local morphButton = Instance.new("TextButton")
-morphButton.Size = UDim2.new(0, frameWidth - 30, 0, elementHeight)
-morphButton.Position = UDim2.new(0, 15, 0, 54 + (elementHeight * 2))
+morphButton.Size = UDim2.new(0, 230, 0, 35)
+morphButton.Position = UDim2.new(0, 15, 0, 120)
 morphButton.Text = "APPLY MORPH"
 morphButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 morphButton.Font = Enum.Font.GothamBold
-morphButton.TextSize = isMobile and 15 or 14
+morphButton.TextSize = 14
 morphButton.Parent = mainFrame
 
 local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(0, 6)
 buttonCorner.Parent = morphButton
 
-local successLabel = Instance.new("TextLabel")
-successLabel.Size = UDim2.new(0, 200, 0, 40)
-successLabel.Position = UDim2.new(0.5, -100, 0.15, 0)
-successLabel.BackgroundTransparency = 1
-successLabel.Text = ""
-successLabel.Font = Enum.Font.GothamBold
-successLabel.TextSize = 22
-successLabel.TextTransparency = 1
-successLabel.Parent = screenGui
-
--- Dynamically resize main frame based on inputs layout
-mainFrame.Size = UDim2.new(0, frameWidth, 0, 68 + (elementHeight * 3))
-
--- RGB Accent Effect for Button
+-- RGB Effect
 local hue = 0
-local rgbConnection
-rgbConnection = RunService.RenderStepped:Connect(function(dt)
-	if not mainFrame or not mainFrame.Parent then
-		rgbConnection:Disconnect()
-		return
+RunService.RenderStepped:Connect(function(dt)
+	if mainFrame and mainFrame.Parent then
+		hue = (hue + (dt * 0.15)) % 1
+		morphButton.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 0.8)
 	end
-	hue = (hue + (dt * 0.15)) % 1
-	morphButton.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 0.8)
 end)
 
-local function showNotice(text, isSuccess)
-	successLabel.Text = text
-	successLabel.TextColor3 = isSuccess and Color3.fromRGB(100, 255, 150) or Color3.fromRGB(255, 80, 80)
-	successLabel.TextTransparency = 0
-	task.wait(0.6)
-	TweenService:Create(successLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-end
-
--- Helper to fetch UserId safely from username or ID string
-local function getUserId(inputStr)
-	local num = tonumber(inputStr)
-	if num then return num end
-	
-	local success, result = pcall(function()
-		return Players:GetUserIdFromNameAsync(inputStr)
-	end)
-	if success then
-		return result
-	end
-	return nil
-end
-
--- Client-Side Morph Functionality (Supports Target Player + Target Avatar)
 morphButton.MouseButton1Click:Connect(function()
 	local targetStr = targetInput.Text
 	local avatarStr = avatarInput.Text
 	
-	if avatarStr == "" then
-		showNotice("Missing Avatar", false)
-		return
-	end
+	if avatarStr == "" then return end
 	
-	-- Determine target character
 	local targetChar = nil
 	if targetStr == "" then
 		targetChar = localPlayer.Character
 	else
-		-- Check if target is a player name or UserId
 		local foundPlayer = Players:FindFirstChild(targetStr)
-		if not foundPlayer then
-			local targetIdNum = tonumber(targetStr)
-			if targetIdNum then
-				for _, p in ipairs(Players:GetPlayers()) do
-					if p.UserId == targetIdNum then
-						foundPlayer = p
-						break
-					end
-				end
-			end
-		end
-		
 		if foundPlayer then
 			targetChar = foundPlayer.Character
-		else
-			-- Try workspace model fallback
-			targetChar = workspace:FindFirstChild(targetStr)
 		end
 	end
 	
 	local humanoid = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
-	if not targetChar or not humanoid then
-		showNotice("Invalid Target", false)
-		return
-	end
+	if not targetChar or not humanoid then return end
 	
-	-- Get Avatar User ID to morph into
-	local avatarUserId = getUserId(avatarStr)
-	if not avatarUserId then
-		showNotice("Invalid Avatar", false)
-		return
+	local targetUserId = tonumber(avatarStr)
+	if not targetUserId then
+		local success, res = pcall(function()
+			return Players:GetUserIdFromNameAsync(avatarStr)
+		end)
+		if success then targetUserId = res else return end
 	end
 	
 	local modelSuccess, generatedModel = pcall(function()
-		local desc = Players:GetHumanoidDescriptionFromUserId(avatarUserId)
+		local desc = Players:GetHumanoidDescriptionFromUserId(targetUserId)
 		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R6)
 	end)
 	
 	if modelSuccess and generatedModel then
-		-- Clear old clothes, colors, and accessories on target character locally
 		for _, item in ipairs(targetChar:GetChildren()) do
-			if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
+			if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") then
 				item:Destroy()
 			end
 		end
 		
-		-- Match limb colors
 		for _, targetItem in ipairs(generatedModel:GetChildren()) do
 			local existingPart = targetChar:FindFirstChild(targetItem.Name)
 			if existingPart and existingPart:IsA("BasePart") and existingPart.Name ~= "HumanoidRootPart" then
 				existingPart.Color = targetItem.Color
 			end
 		end
-
-		-- Head, Mesh, and Face Extraction
-		local targetHead = generatedModel:FindFirstChild("Head")
-		local currentHead = targetChar:FindFirstChild("Head")
-		if targetHead and currentHead then
-			local oldFace = currentHead:FindFirstChildOfClass("Decal")
-			if oldFace then oldFace:Destroy() end
-			
-			local newFace = targetHead:FindFirstChildOfClass("Decal")
-			if newFace then 
-				newFace:Clone().Parent = currentHead 
-			else
-				local defaultFace = Instance.new("Decal")
-				defaultFace.Name = "face"
-				defaultFace.Texture = "rbxasset://textures/face.png"
-				defaultFace.Parent = currentHead
-			end
-
-			local oldMesh = currentHead:FindFirstChildOfClass("SpecialMesh")
-			if oldMesh then oldMesh:Destroy() end
-			
-			local newMesh = targetHead:FindFirstChildOfClass("SpecialMesh")
-			if newMesh then 
-				newMesh:Clone().Parent = currentHead 
-			end
-		end
 		
-		-- Apply classic clothing and accessories
 		for _, item in ipairs(generatedModel:GetChildren()) do
-			if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") or item:IsA("CharacterMesh") then
+			if item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("BodyColors") then
 				item:Clone().Parent = targetChar
 			elseif item:IsA("Accessory") then
-				local clonedAccessory = item:Clone()
-				local handle = clonedAccessory:FindFirstChild("Handle")
+				local cloned = item:Clone()
+				local handle = cloned:FindFirstChild("Handle")
 				if handle then
-					local attachment = handle:FindFirstChildOfClass("Attachment")
-					if attachment then
-						local targetAttachment = targetChar:FindFirstChild(attachment.Name, true)
-						if targetAttachment then
-							handle.CFrame = targetAttachment.WorldCFrame
+					local att = handle:FindFirstChildOfClass("Attachment")
+					if att then
+						local targetAtt = targetChar:FindFirstChild(att.Name, true)
+						if targetAtt then
+							handle.CFrame = targetAtt.WorldCFrame
 							local weld = Instance.new("Weld")
-							weld.Name = "AccessoryWeld"
 							weld.Part0 = handle
-							weld.Part1 = targetAttachment.Parent
-							weld.C0 = attachment.CFrame
-							weld.C1 = targetAttachment.CFrame
+							weld.Part1 = targetAtt.Parent
+							weld.C0 = att.CFrame
+							weld.C1 = att.CFrame
 							weld.Parent = handle
 						end
 					end
 				end
-				clonedAccessory.Parent = targetChar
+				cloned.Parent = targetChar
 			end
 		end
-		
 		generatedModel:Destroy()
-		showNotice("Success!", true)
-	else
-		showNotice("Error", false)
 	end
 end)
